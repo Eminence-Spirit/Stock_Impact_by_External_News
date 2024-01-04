@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Market Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <canvas id="stockChart"></canvas>
+    <button onclick="refreshSimulation()">Refresh Simulation</button>
+
+<script>
+    var ctx = document.getElementById('stockChart').getContext('2d');
+    var stockChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: []
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom'
+                },
+                y: {
+                    beginAtZero: true  // Adjust as needed for your scale
+                }
+            }
+        }
+    });
+
+
+function refreshSimulation() {
+    $.getJSON('/simulate', function(data) {
+        var newColor;
+        var datasetLength = stockChart.data.datasets.length;
+
+        // If this is the first simulation, use blue. Otherwise, use gray.
+        if (datasetLength === 0 || (datasetLength === 1 && stockChart.data.datasets[0].label === 'News Spread Day')) {
+            newColor = '#007bff'; // Blue for the first simulation
+        } else {
+            newColor = '#808080'; // Gray for subsequent simulations
+        }
+
+        var stockData = {
+            label: 'Stock Prices ' + (datasetLength + 1), // Unique label for each dataset
+            data: data.stockPrices,
+            borderColor: newColor,
+            fill: false
+        };
+
+        // Retain the red line dataset if it's already in the chart
+        var redLineDataset = stockChart.data.datasets.find(d => d.label === 'News Spread Day');
+        if (!redLineDataset) {
+            redLineDataset = {
+                label: 'News Spread Day',
+                borderColor: 'red',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false,
+                data: [{x: 100, y: 0}, {x: 100, y: 200}],
+                type: 'line',
+                order: 0
+            };
+            stockChart.data.datasets.push(redLineDataset);
+        }
+
+        // Add the new stock data dataset
+        stockChart.data.datasets.push(stockData);
+        stockChart.update();
+    });
+}
+</script>
+</body>
+</html>
+
